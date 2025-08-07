@@ -346,7 +346,17 @@ export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
                   current.lastUpdateTime > latest.lastUpdateTime ? current : latest
                 );
                 console.log('Using existing latest session:', latestSession.id);
-                this.updateWithSelectedSession(latestSession);
+                // 상세 정보 fetch 후 updateWithSelectedSession 호출
+                this.sessionService.getSession(this.userId, this.appName, latestSession.id)
+                  .pipe(take(1), catchError((error) => {
+                    console.warn('Failed to fetch session details:', error);
+                    return of(null);
+                  }))
+                  .subscribe((detailedSession) => {
+                    if (detailedSession) {
+                      this.updateWithSelectedSession(detailedSession);
+                    }
+                  });
 
                 // URL도 업데이트
                 this.isSessionUrlEnabledObs.subscribe((enabled) => {
@@ -396,7 +406,17 @@ export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
             }))
             .subscribe((session) => {
               if (session) {
-                this.updateWithSelectedSession(session);
+                // 상세 정보 fetch 후 updateWithSelectedSession 호출
+                this.sessionService.getSession(this.userId, this.appName, session.id)
+                  .pipe(take(1), catchError((error) => {
+                    console.warn('Failed to fetch session details:', error);
+                    return of(null);
+                  }))
+                  .subscribe((detailedSession) => {
+                    if (detailedSession) {
+                      this.updateWithSelectedSession(detailedSession);
+                    }
+                  });
               }
             });
         }
@@ -1496,9 +1516,20 @@ export class ChatComponent implements OnInit, AfterViewInit, OnDestroy {
                         current.lastUpdateTime > latest.lastUpdateTime ? current : latest
                       );
                       console.log('Redirecting to latest session:', latestSession.id);
-                      // URL 업데이트 및 세션 로드
-                      this.updateWithSelectedSession(latestSession);
-                      return of(latestSession);
+                      // 상세 정보 fetch 후 updateWithSelectedSession 호출
+                      return this.sessionService.getSession(this.userId, appName, latestSession.id)
+                        .pipe(take(1), catchError((error) => {
+                          console.warn('Failed to fetch session details:', error);
+                          return of(null);
+                        }))
+                        .pipe(
+                          switchMap((detailedSession) => {
+                            if (detailedSession) {
+                              this.updateWithSelectedSession(detailedSession);
+                            }
+                            return of(latestSession);
+                          })
+                        );
                     } else {
                       console.log('No sessions found, will create new session');
                       this.createSessionAndReset();
