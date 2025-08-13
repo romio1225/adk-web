@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import {env} from '../env/env';
+import { env } from '../env/env';
 
 export class URLUtil {
   /**
@@ -37,7 +37,25 @@ export class URLUtil {
    * @returns {string} Base URL (protocol + hostname + port)
    */
   static getApiServerBaseUrl(): string {
-    return (window as any)['runtimeConfig']?.backendUrl;
+    // return (window as any)['runtimeConfig']?.backendUrl;
+    const backendUrl = (window as any)['runtimeConfig']?.backendUrl;
+
+    // If backendUrl is not set, derive it from current location
+    if (!backendUrl || backendUrl === '') {
+      // Extract the base path from current URL for Traefik routing
+      // e.g., from http://localhost/users/user111/dev-ui/ -> http://localhost/users/user111
+      const currentPath = window.location.pathname;
+      const devUiIndex = currentPath.indexOf('/dev-ui');
+      if (devUiIndex > 0) {
+        // We're under a user-specific path with Traefik
+        const basePath = currentPath.substring(0, devUiIndex);
+        return window.location.origin + basePath;
+      }
+      // Fallback to origin if not under /dev-ui
+      return window.location.origin;
+    }
+
+    return backendUrl;
   }
 
   static getWSServerUrl(): string {
